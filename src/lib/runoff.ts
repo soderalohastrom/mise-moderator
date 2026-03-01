@@ -40,18 +40,27 @@ Respond with ONLY valid JSON (no markdown, no explanation outside the JSON):
 }`;
 }
 
+function extractJson(raw: string): unknown {
+  // 1. Try direct parse (model returned clean JSON)
+  try { return JSON.parse(raw.trim()); } catch { /* fall through */ }
+  // 2. Strip markdown fences then retry
+  const stripped = raw.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim();
+  try { return JSON.parse(stripped); } catch { /* fall through */ }
+  // 3. Greedy match: first { to last } (handles body text with curly chars)
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try { return JSON.parse(match[0]); } catch { return null; }
+}
+
 function parseJudgment(raw: string): ModerationJudgment | null {
   try {
-    // Try to extract JSON from the response (models sometimes wrap in markdown)
-    const jsonMatch = raw.match(/\{[\s\S]*?\}/);
-    if (!jsonMatch) return null;
-    const parsed = JSON.parse(jsonMatch[0]);
-    if (typeof parsed.on_topic !== 'boolean') return null;
+    const parsed = extractJson(raw) as Record<string, unknown> | null;
+    if (!parsed || typeof parsed.on_topic !== 'boolean') return null;
     return {
       on_topic: parsed.on_topic,
       confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.5,
-      suggested_forum: parsed.suggested_forum || null,
-      reason: parsed.reason || '',
+      suggested_forum: (parsed.suggested_forum as string) || null,
+      reason: (parsed.reason as string) || '',
     };
   } catch {
     return null;
@@ -149,13 +158,11 @@ Make it feel authentic — specific details, real industry voice, no fluff.`;
   if (!response.ok) throw new Error(`Generate failed: ${response.status}`);
 
   const data: RunoffResponse = await response.json();
-  const raw = data.results[0]?.response || '';
+  const raw = data.results[0]?.response;
+  if (!raw) throw new Error('No response from generate model');
 
-  const jsonMatch = raw.match(/\{[\s\S]*?\}/);
-  if (!jsonMatch) throw new Error('Could not parse generated post');
-
-  const parsed = JSON.parse(jsonMatch[0]);
-  if (!parsed.title || !parsed.body) throw new Error('Invalid generated post format');
+  const parsed = extractJson(raw) as Record<string, unknown> | null;
+  if (!parsed?.title || !parsed?.body) throw new Error('Could not parse generated post');
 
   return { title: String(parsed.title), body: String(parsed.body) };
 }
