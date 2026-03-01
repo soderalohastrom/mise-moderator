@@ -14,6 +14,7 @@ function App() {
   const [isOffTopic, setIsOffTopic] = useState(true);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [testRuns, setTestRuns] = useState<TestRun[]>([]);
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
   const [expandedModel, setExpandedModel] = useState<string | null>(null);
@@ -55,6 +56,7 @@ function App() {
   const handleGeneratePost = async () => {
     if (!selectedForum) return;
     setGenerating(true);
+    setGenerateError(null);
     try {
       const { title, body } = await generatePost(
         selectedForum.id,
@@ -65,6 +67,8 @@ function App() {
       setPostBody(body);
     } catch (err) {
       console.error('Generate failed:', err);
+      setGenerateError('Generation failed — try again');
+      setTimeout(() => setGenerateError(null), 4000);
     } finally {
       setGenerating(false);
     }
@@ -202,7 +206,7 @@ function App() {
                       <button
                         onClick={handleGeneratePost}
                         disabled={generating || loading}
-                        title="Generate a random post with an edge LLM"
+                        title="Generate a random post with an edge LLM (Llama 3B)"
                         className="shrink-0 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 border border-zinc-700 hover:border-zinc-500 rounded-lg transition flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200"
                       >
                         {generating
@@ -211,6 +215,11 @@ function App() {
                         }
                       </button>
                     </div>
+                    {generateError && (
+                      <p className="text-xs text-red-400 flex items-center gap-1">
+                        <XCircle className="w-3.5 h-3.5" /> {generateError}
+                      </p>
+                    )}
                     <textarea
                       placeholder="Post body… (type your own or hit Generate Post ↑)"
                       value={postBody}

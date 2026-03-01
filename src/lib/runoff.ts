@@ -116,7 +116,7 @@ export function scoreResults(
   });
 }
 
-const GENERATE_MODEL = 'qwen3-moe'; // fast, good at structured JSON output
+const GENERATE_MODEL = 'llama-3b'; // fast, reliable JSON output (~1.5s)
 
 export async function generatePost(
   forumId: string,
