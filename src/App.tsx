@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { FORUMS, type Forum } from './data/forums';
 import { SEED_POSTS, type SeedPost } from './data/seed-posts';
 import { runModeration, scoreResults, generatePost, ALL_MODELS } from './lib/runoff';
-import type { ModerationResult, TestRun, ModelScore } from './types';
+import type { TestRun, ModelScore } from './types';
 import { FlameKindling, Send, BarChart3, MessageSquareWarning, ChevronDown, ChevronRight, CheckCircle2, XCircle, AlertTriangle, Loader2, Trash2, Shuffle } from 'lucide-react';
 
 function App() {
